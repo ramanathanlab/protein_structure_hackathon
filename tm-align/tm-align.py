@@ -24,7 +24,7 @@ def run_tmalign(pdbs: Tuple[str, str], tmalign_path: str) -> Tuple[float, float]
     cmd = f"{tmalign_path} {pdb1} {pdb2} -outfmt 2"
     proc = subprocess.run(cmd.split(), capture_output=True)
     out = proc.stdout.decode("utf-8")
-    print(str(proc.stdout).split())
+    print(str(proc.stdout).split("\\"))
     # tm_score1, tm_score2
     return float(out[13][1:]), float(out[14][1:])
 

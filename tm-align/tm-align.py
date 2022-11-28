@@ -23,10 +23,11 @@ def run_tmalign(pdbs: Tuple[str, str], tmalign_path: str) -> Tuple[float, float]
     pdb1, pdb2 = pdbs
     cmd = f"{tmalign_path} {pdb1} {pdb2} -outfmt 2"
     proc = subprocess.run(cmd.split(), capture_output=True)
-    out = proc.stdout.decode("utf-8")
-    print(str(proc.stdout).split("\\"))
-    # tm_score1, tm_score2
-    return float(out[13][1:]), float(out[14][1:])
+    out = str(proc.stdout).split("\\")
+    tm_score1 = float(out[17].split("= ")[1].split(" (")[0])
+    tm_score2 = float(out[18].split("= ")[1].split(" (")[0])
+    # (if normalized by length of Chain_1, Chain_2)
+    return tm_score1, tm_score2
 
 
 def one_v_all(all_pdbs, j):

@@ -10,7 +10,7 @@ import itertools
 import shutil
 from pathlib import Path
 from tqdm import tqdm
-from typing import List
+from typing import List, Tuple
 import functools
 import re
 from concurrent.futures import ProcessPoolExecutor
@@ -19,17 +19,13 @@ from itertools import chain
 from operator import itemgetter
 
 
-pattern = re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")
-
-
-def run_tmalign(pdbs, tmalign_path: str) -> float:
+def run_tmalign(pdbs: Tuple[str, str], tmalign_path: str) -> Tuple[float, float]:
     pdb1, pdb2 = pdbs
-    cmd = f"{tmalign_path} {str(pdb1)} {str(pdb2)}"
-    res = subprocess.run(cmd.split(), capture_output=True)
-    # TODO: Parse this with an index lookup instead of regex
-    score = [float(each) for each in pattern.findall(res.stdout.decode("utf-8"))]
-    return score
-    # return 1, 1
+    cmd = f"{tmalign_path} {pdb1} {pdb2} -outfmt 2"
+    proc = subprocess.run(cmd.split(), capture_output=True)
+    out = str(proc.stdout).split("\\")
+    # tm_score1, tm_score2
+    return float(out[13][1:]), float(out[14][1:])
 
 
 def one_v_all(all_pdbs, j):

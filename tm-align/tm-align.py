@@ -10,13 +10,10 @@ import itertools
 import shutil
 from pathlib import Path
 from tqdm import tqdm
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 import functools
-import re
 from concurrent.futures import ProcessPoolExecutor
 import json
-from itertools import chain
-from operator import itemgetter
 
 
 def run_tmalign(pdbs: Tuple[str, str], tmalign_path: str) -> Tuple[float, float]:
@@ -30,10 +27,15 @@ def run_tmalign(pdbs: Tuple[str, str], tmalign_path: str) -> Tuple[float, float]
     return tm_score1, tm_score2
 
 
-def run_multiple_tmalign(
-    pdbs: List[Tuple[str, str]], tmalign_path: str, verbose: bool = True
-) -> List[Tuple[str, str, float, float]]:
+def run_multiple_tmalign(kwargs: Dict[str, Any]) -> List[Tuple[str, str, float, float]]:
+
+    # Parse arguments
+    pdbs: List[Tuple[str, str]] = kwargs.get("pdbs")
+    tmalign_path: str = kwargs.get("tmalign_path")
+    verbose: bool = kwargs.get("verbose")
+
     results = []
+
     for pdb1, pdb2 in tqdm(pdbs, disable=not verbose):
         cmd = f"{tmalign_path} {pdb1} {pdb2} -outfmt 2"
         proc = subprocess.run(cmd.split(), capture_output=True)
@@ -43,21 +45,6 @@ def run_multiple_tmalign(
         tm_score2 = float(out[18].split("= ")[1].split(" (")[0])
         results.append((pdb1, pdb2, tm_score1, tm_score2))
     return results
-
-
-def one_v_all(all_pdbs, j):
-    pdb_j = all_pdbs[j]
-    total_num = len(all_pdbs)
-    ji_sim = [None] * (j + 1)
-    ij_sim = [None] * (j + 1)
-    for i in range(0, j + 1):
-        if i == j:
-            ij_sim[j] = (j, j, 1.0)
-            ji_sim[j] = (j, j, 1.0)
-        score_ji, score_ij = run_tmalign(pdb_j, all_pdbs[i])
-        ji_sim[i] = (j, i, score_ji)
-        ij_sim[i] = (i, j, score_ij)
-    return j, ij_sim + ji_sim[:j] + ji_sim[j + 1 :]
 
 
 def all_v_all(
@@ -94,10 +81,13 @@ def all_v_all_v2(
     chunksize = max(1, len(pairs) // num_workers)
     chunks = [pairs[i * chunksize : (i + 1) * chunksize] for i in range(chunksize)]
     verbose = [True] + [False] * (chunksize - 1)
-    fn = functools.partial(run_multiple_tmalign, tmalign_path=tmalign_path)
+    kwargs = [
+        {"pdbs": chunk, "verbose": v, "tmalign_path": tmalign_path}
+        for chunk, v in zip(chunks, verbose)
+    ]
     results = []
     with ProcessPoolExecutor(max_workers=num_workers) as pool:
-        for result in pool.map(fn, chunks, verbose):
+        for result in pool.map(run_multiple_tmalign, kwargs):
             results.extend(result)
 
     with open(out_path, "w") as f:

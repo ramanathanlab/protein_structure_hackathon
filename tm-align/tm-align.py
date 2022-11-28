@@ -73,7 +73,7 @@ if __name__ == "__main__":
     node_local_path = Path("/tmp")
     node_local_pdb_dir = node_local_path / input_pdb_dir.name
     if not node_local_pdb_dir.exists():
-        shutil.copytree(input_pdb_dir, node_local_path)
+        shutil.copytree(input_pdb_dir, node_local_pdb_dir)
 
     input_pdb_dir = node_local_pdb_dir
     all_pdbs = list(input_pdb_dir.glob("*.pdb"))

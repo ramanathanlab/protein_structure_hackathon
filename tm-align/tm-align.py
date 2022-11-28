@@ -20,8 +20,9 @@ from operator import itemgetter
 pattern = re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")
 
 
-def run_tmalign(pdb1, pdb2) -> float:
-    cmd = f"TMalign {str(pdb2)} {str(pdb1)}"
+def run_tmalign(pdbs) -> float:
+    pdb1, pdb2 = pdbs
+    cmd = f"TMalign {str(pdb1)} {str(pdb2)}"
     res = subprocess.run(cmd.split(), capture_output=True)
     # TODO: Parse this with an index lookup instead of regex
     score = [float(each) for each in pattern.findall(res.stdout.decode("utf-8"))]
@@ -69,6 +70,7 @@ if __name__ == "__main__":
         "/lus/eagle/projects/CVD-Mol-AI/hippekp/visualization_structures/mdh/mdh_structures_transfer"
     )
     all_pdbs = list(mdh_pdbs_path.glob("*.pdb"))
+    all_pdbs = all_pdbs[:10]  # TODO: testing
     num_workers = 64
 
     all_v_all(all_pdbs, "test.json", num_workers=num_workers)

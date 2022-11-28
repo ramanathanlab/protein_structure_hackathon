@@ -56,12 +56,13 @@ def all_v_all(
     total_num = len(all_pdbs)
     total_num = total_num * (total_num - 1) // 2
 
+    pairs = list(itertools.combinations(all_pdbs, 2))
     fn = functools.partial(run_tmalign, tmalign_path=tmalign_path)
     results = []
     chunksize = max(1, total_num // num_workers)
     with ProcessPoolExecutor(max_workers=num_workers) as pool:
         for scores in tqdm(
-            pool.map(fn, itertools.combinations(all_pdbs, 2), chunksize=chunksize),
+            pool.map(fn, pairs, chunksize=chunksize),
             total=total_num,
         ):
             results.append(scores)

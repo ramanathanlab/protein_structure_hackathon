@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     input_pdb_dir = node_local_pdb_dir
     all_pdbs = list(map(str, input_pdb_dir.glob("*.pdb")))
-    all_pdbs = all_pdbs[:100]  # TODO: testing
+    # all_pdbs = all_pdbs[:100]  # TODO: testing
     num_workers = 64
 
     all_v_all(all_pdbs, "test.json", num_workers=num_workers, tmalign_path=tmalign_path)

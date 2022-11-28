@@ -7,6 +7,7 @@ Contact Kyle Hippe khippe@anl.gov with questions
 """
 import subprocess
 import itertools
+import shutil
 from pathlib import Path
 from tqdm import tqdm
 import re
@@ -66,10 +67,16 @@ def all_v_all(all_pdbs, out_path, num_workers: int = 1):
 
 if __name__ == "__main__":
 
-    mdh_pdbs_path = Path(
+    input_pdb_dir = Path(
         "/lus/eagle/projects/CVD-Mol-AI/hippekp/visualization_structures/mdh/mdh_structures_transfer"
     )
-    all_pdbs = list(mdh_pdbs_path.glob("*.pdb"))
+    node_local_path = Path("/tmp")
+    node_local_pdb_dir = node_local_path / input_pdb_dir.name
+    if not node_local_pdb_dir.exists():
+        shutil.copytree(input_pdb_dir, node_local_path)
+
+    input_pdb_dir = node_local_pdb_dir
+    all_pdbs = list(input_pdb_dir.glob("*.pdb"))
     all_pdbs = all_pdbs[:10]  # TODO: testing
     num_workers = 64
 

@@ -7,7 +7,7 @@ from functools import partial
 import json
 from itertools import chain
 from operator import itemgetter
-from multiprocessing import Array
+from multiprocessing import Manager, Pool
 
 """
 This script takes a list of pdbs and compares them to two reference pdbs.
@@ -43,7 +43,7 @@ def run_tmalign(pdb1, pdb2) -> float:
 #         json.dump(isoform_scores, f)
 
 
-def one_v_all(all_pdbs, j):
+def one_v_all(all_pdbs, j, sl):
     pdb_j = all_pdbs[j]
     total_num = len(all_pdbs)
     ji_sim = [None] * (j + 1)
@@ -55,18 +55,22 @@ def one_v_all(all_pdbs, j):
         score_ji, score_ij = run_tmalign(pdb_j, all_pdbs[i])
         ji_sim[i] = (j, i, score_ji)
         ij_sim[i] = (i, j, score_ij)
-    return j, ij_sim + ji_sim[:j] + ji_sim[j + 1 :]
+    # return j, ij_sim + ji_sim[:j] + ji_sim[j + 1 :]
+    sl[j] = ij_sim + ji_sim[:j] + ji_sim[j + 1 :]
 
 
 def all_v_all(all_pdbs, out_path):
     total_num = len(all_pdbs)
-    helper_fn = partial(one_v_all, all_pdbs)
-    sim_batched = [None] * total_num
-    with ProcessPoolExecutor() as pool:
-        for idx, sim_list in tqdm(
-            pool.map(helper_fn, range(total_num)), total=total_num
+    manager = Manager()
+    sim_batched = manager.list([None] * total_num)
+
+    helper_fn = partial(one_v_all, all_pdbs, sl=sim_batched)
+    with Pool() as pool:
+        for _ in tqdm(
+            pool.imap_unordered(helper_fn, range(total_num)), total=total_num
         ):
-            sim_batched[idx] = sim_list
+            # sim_batched[idx] = sim_list
+            pass
 
     sim_all = list(chain(*sim_batched))
     sim_all.sort(key=itemgetter(0, 1))

@@ -16,7 +16,7 @@ Contact Kyle Hippe khippe@anl.gov with questions
 
 
 def run_tmalign(reference, pdb_1, pattern) -> float:
-    cmd = f"tmalign {str(pdb_1)} {str(reference)}"
+    cmd = f"TMalign {str(pdb_1)} {str(reference)}"
     res = subprocess.run(cmd.split(), capture_output=True)
     score = float(pattern.findall(res.stdout.decode("utf-8"))[-1])
 
@@ -39,8 +39,6 @@ def process_against_reference(isoform_path, all_pdbs, out_path):
 
 
 if __name__ == "__main__":
-
-    tmscore_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/tmscore/TMscore")
     mdh_pdbs_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/mdh_pdbs")
     isoform_1_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/2pwz.pdb")
     isoform_2_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/1nxu.pdb")

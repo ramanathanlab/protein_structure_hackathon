@@ -30,6 +30,21 @@ def run_tmalign(pdbs: Tuple[str, str], tmalign_path: str) -> Tuple[float, float]
     return tm_score1, tm_score2
 
 
+def run_multiple_tmalign(
+    pdbs: List[Tuple[str, str]], tmalign_path: str, verbose: bool = True
+) -> List[Tuple[str, str, float, float]]:
+    results = []
+    for pdb1, pdb2 in tqdm(pdbs, disable=not verbose):
+        cmd = f"{tmalign_path} {pdb1} {pdb2} -outfmt 2"
+        proc = subprocess.run(cmd.split(), capture_output=True)
+        out = str(proc.stdout).split("\\")
+        # (if normalized by length of Chain_1, Chain_2)
+        tm_score1 = float(out[17].split("= ")[1].split(" (")[0])
+        tm_score2 = float(out[18].split("= ")[1].split(" (")[0])
+        results.append((pdb1, pdb2, tm_score1, tm_score2))
+    return results
+
+
 def one_v_all(all_pdbs, j):
     pdb_j = all_pdbs[j]
     total_num = len(all_pdbs)
@@ -69,6 +84,25 @@ def all_v_all(
         json.dump(results, f)
 
 
+def all_v_all_v2(
+    all_pdbs: List[str],
+    out_path: str,
+    tmalign_path: str = "TMalign",
+    num_workers: int = 1,
+):
+    pairs = list(itertools.combinations(all_pdbs, 2))
+    chunksize = max(1, len(pairs) // num_workers)
+    chunks = [pairs[i * chunksize : (i + 1) * chunksize] for i in range(chunksize)]
+    fn = functools.partial(run_multiple_tmalign, tmalign_path=tmalign_path)
+    results = []
+    with ProcessPoolExecutor(max_workers=num_workers) as pool:
+        for result in pool.map(fn, chunks):
+            results.extend(result)
+
+    with open(out_path, "w") as f:
+        json.dump(results, f)
+
+
 if __name__ == "__main__":
 
     input_pdb_dir = Path(
@@ -89,4 +123,6 @@ if __name__ == "__main__":
     # all_pdbs = all_pdbs[:100]  # TODO: testing
     num_workers = 64
 
-    all_v_all(all_pdbs, "test.json", num_workers=num_workers, tmalign_path=tmalign_path)
+    all_v_all_v2(
+        all_pdbs, "test.json", num_workers=num_workers, tmalign_path=tmalign_path
+    )

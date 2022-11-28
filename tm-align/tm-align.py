@@ -8,6 +8,7 @@ import json
 from itertools import chain
 from operator import itemgetter
 from multiprocessing import Manager, Pool
+from itertools import combinations_with_replacement
 
 """
 This script takes a list of pdbs and compares them to two reference pdbs.
@@ -79,6 +80,42 @@ def all_v_all(all_pdbs, out_path):
         json.dump(sim_all, f)
 
 
+def one_v_one(pair, all_pdbs, total_num, sl):
+    i, j = pair
+    if i == j:
+        sl[i * total_num + i] = (i, i, 1.0)
+    else:
+        pdb_i = all_pdbs[i]
+        pdb_j = all_pdbs[j]
+        score_ji, score_ij = run_tmalign(pdb_j, pdb_i)
+        sl[j * total_num + i] = (j, i, score_ji)
+        sl[i * total_num + j] = (i, j, score_ij)
+
+
+def all_v_all_fine(all_pdbs, out_path):
+    total_num = len(all_pdbs)
+    manager = Manager()
+    sim_batched = manager.list([None] * (total_num * total_num))
+
+    all_idx = list(combinations_with_replacement(range(total_num), 2))
+    helper_fn = partial(
+        one_v_one, all_pdbs=all_pdbs, total_num=total_num, sl=sim_batched
+    )
+
+    with Pool() as pool:
+        for _ in tqdm(
+            pool.imap_unordered(helper_fn, all_idx, chunksize=100),
+            total=len(all_idx),
+        ):
+            pass
+
+    sim_all = list(sim_batched)
+    sim_all.sort(key=itemgetter(0, 1))
+
+    with open(out_path, "w") as f:
+        json.dump(sim_all, f)
+
+
 if __name__ == "__main__":
 
     # tmscore_path = Path("TMscore")
@@ -93,7 +130,7 @@ if __name__ == "__main__":
 
     # all_pdbs = list(range(4))
 
-    all_v_all(all_pdbs, "test.json")
+    all_v_all_fine(all_pdbs[:1000], "test.json")
 
     # process_against_reference(isoform_1_path, all_pdbs, "2wpz_tmalign_scores.json")
     # process_against_reference(isoform_2_path, all_pdbs, "1nxu_tmalign_scores.json")

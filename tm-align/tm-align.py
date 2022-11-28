@@ -6,6 +6,7 @@ This can be easily adapted to run pairwise tm-scores.
 Contact Kyle Hippe khippe@anl.gov with questions
 """
 import subprocess
+import itertools
 from pathlib import Path
 from tqdm import tqdm
 import re
@@ -45,37 +46,25 @@ def one_v_all(all_pdbs, j):
 
 def all_v_all(all_pdbs, out_path, num_workers: int = 1):
     total_num = len(all_pdbs)
-    helper_fn = partial(one_v_all, all_pdbs)
-    sim_batched = [None] * total_num
-    with ProcessPoolExecutor(max_workers=num_workers) as pool:
-        for idx, sim_list in tqdm(
-            pool.map(helper_fn, range(total_num)), total=total_num
-        ):
-            sim_batched[idx] = sim_list
+    total_num = total_num * (total_num - 1) // 2
 
-    sim_all = list(chain(*sim_batched))
-    sim_all.sort(key=itemgetter(0, 1))
+    results = []
+    with ProcessPoolExecutor(max_workers=num_workers) as pool:
+        for scores in tqdm(
+            pool.map(run_tmalign, itertools.combinations(all_pdbs, 2)), total=total_num
+        ):
+            results.append(scores)
 
     with open(out_path, "w") as f:
-        json.dump(sim_all, f)
+        json.dump(results, f)
 
 
 if __name__ == "__main__":
 
-    # tmscore_path = Path("TMscore")
     mdh_pdbs_path = Path(
         "/lus/eagle/projects/CVD-Mol-AI/hippekp/visualization_structures/mdh/mdh_structures_transfer"
     )
-    # isoform_1_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/2pwz.pdb")
-    # isoform_2_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/1nxu.pdb")
-
-    num_workers = 64
     all_pdbs = list(mdh_pdbs_path.glob("*.pdb"))
-    all_pdbs.sort()
-
-    # all_pdbs = list(range(4))
+    num_workers = 64
 
     all_v_all(all_pdbs, "test.json", num_workers=num_workers)
-
-    # process_against_reference(isoform_1_path, all_pdbs, "2wpz_tmalign_scores.json")
-    # process_against_reference(isoform_2_path, all_pdbs, "1nxu_tmalign_scores.json")

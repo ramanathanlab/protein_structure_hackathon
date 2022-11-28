@@ -90,6 +90,8 @@ def all_v_all_v2(
         for result in pool.map(run_multiple_tmalign, kwargs):
             results.extend(result)
 
+    print(f"Processed {len(results)} TMaligns")
+
     with open(out_path, "w") as f:
         json.dump(results, f)
 

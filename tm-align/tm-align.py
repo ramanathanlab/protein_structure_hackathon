@@ -59,11 +59,11 @@ def all_v_all(
     results = []
     chunksize = max(1, total_num // num_workers)
     with ProcessPoolExecutor(max_workers=num_workers) as pool:
-        for scores in tqdm(
-            pool.map(fn, pairs, chunksize=chunksize),
+        for i, scores in tqdm(
+            enumerate(pool.map(fn, pairs, chunksize=chunksize)),
             total=total_num,
         ):
-            results.append(scores)
+            results.append((pairs[i], scores))
 
     with open(out_path, "w") as f:
         json.dump(results, f)

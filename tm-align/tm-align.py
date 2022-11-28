@@ -93,10 +93,11 @@ def all_v_all_v2(
     pairs = list(itertools.combinations(all_pdbs, 2))
     chunksize = max(1, len(pairs) // num_workers)
     chunks = [pairs[i * chunksize : (i + 1) * chunksize] for i in range(chunksize)]
+    verbose = [True] + [False] * (chunksize - 1)
     fn = functools.partial(run_multiple_tmalign, tmalign_path=tmalign_path)
     results = []
     with ProcessPoolExecutor(max_workers=num_workers) as pool:
-        for result in pool.map(fn, chunks):
+        for result in pool.map(fn, chunks, verbose):
             results.extend(result)
 
     with open(out_path, "w") as f:

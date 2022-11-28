@@ -83,7 +83,7 @@ if __name__ == "__main__":
     node_local_pdb_dir = node_local_path / input_pdb_dir.name
     if not node_local_pdb_dir.exists():
         shutil.copytree(input_pdb_dir, node_local_pdb_dir)
-    tmalign_path = str(shutil.copy(tmalign_path, node_local_path / tmalign_path))
+    tmalign_path = str(shutil.copy(tmalign_path, node_local_path / tmalign_path.name))
 
     input_pdb_dir = node_local_pdb_dir
     all_pdbs = list(map(str, input_pdb_dir.glob("*.pdb")))

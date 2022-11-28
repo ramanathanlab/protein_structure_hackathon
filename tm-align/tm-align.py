@@ -10,9 +10,10 @@ import itertools
 import shutil
 from pathlib import Path
 from tqdm import tqdm
+from typing import List
+import functools
 import re
 from concurrent.futures import ProcessPoolExecutor
-from functools import partial
 import json
 from itertools import chain
 from operator import itemgetter
@@ -21,9 +22,9 @@ from operator import itemgetter
 pattern = re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")
 
 
-def run_tmalign(pdbs) -> float:
+def run_tmalign(pdbs, tmalign_path: str) -> float:
     pdb1, pdb2 = pdbs
-    cmd = f"TMalign {str(pdb1)} {str(pdb2)}"
+    cmd = f"{tmalign_path} {str(pdb1)} {str(pdb2)}"
     res = subprocess.run(cmd.split(), capture_output=True)
     # TODO: Parse this with an index lookup instead of regex
     score = [float(each) for each in pattern.findall(res.stdout.decode("utf-8"))]
@@ -46,17 +47,21 @@ def one_v_all(all_pdbs, j):
     return j, ij_sim + ji_sim[:j] + ji_sim[j + 1 :]
 
 
-def all_v_all(all_pdbs, out_path, num_workers: int = 1):
+def all_v_all(
+    all_pdbs: List[str],
+    out_path: str,
+    tmalign_path: str = "TMalign",
+    num_workers: int = 1,
+):
     total_num = len(all_pdbs)
     total_num = total_num * (total_num - 1) // 2
 
+    fn = functools.partial(run_tmalign, tmalign_path=tmalign_path)
     results = []
     chunksize = max(1, total_num // num_workers)
     with ProcessPoolExecutor(max_workers=num_workers) as pool:
         for scores in tqdm(
-            pool.map(
-                run_tmalign, itertools.combinations(all_pdbs, 2), chunksize=chunksize
-            ),
+            pool.map(fn, itertools.combinations(all_pdbs, 2), chunksize=chunksize),
             total=total_num,
         ):
             results.append(scores)
@@ -70,14 +75,19 @@ if __name__ == "__main__":
     input_pdb_dir = Path(
         "/lus/eagle/projects/CVD-Mol-AI/hippekp/visualization_structures/mdh/mdh_structures_transfer"
     )
+    tmalign_path = Path(
+        "/lus/eagle/projects/CVD-Mol-AI/braceal/conda/envs/tm-align/bin/TMalign"
+    )
+
     node_local_path = Path("/tmp")
     node_local_pdb_dir = node_local_path / input_pdb_dir.name
     if not node_local_pdb_dir.exists():
         shutil.copytree(input_pdb_dir, node_local_pdb_dir)
+    tmalign_path = str(shutil.copy(tmalign_path, node_local_path / tmalign_path))
 
     input_pdb_dir = node_local_pdb_dir
-    all_pdbs = list(input_pdb_dir.glob("*.pdb"))
-    all_pdbs = all_pdbs[:10]  # TODO: testing
+    all_pdbs = list(map(str, input_pdb_dir.glob("*.pdb")))
+    all_pdbs = all_pdbs[:100]  # TODO: testing
     num_workers = 64
 
-    all_v_all(all_pdbs, "test.json", num_workers=num_workers)
+    all_v_all(all_pdbs, "test.json", num_workers=num_workers, tmalign_path=tmalign_path)

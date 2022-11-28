@@ -19,9 +19,14 @@ Contact Kyle Hippe khippe@anl.gov with questions
 
 pattern = re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")
 
+<<<<<<< HEAD
 
 def run_tmalign(pdb1, pdb2) -> float:
     cmd = f"TMalign {str(pdb2)} {str(pdb1)}"
+=======
+def run_tmalign(reference, pdb_1, pattern) -> float:
+    cmd = f"TMalign {str(pdb_1)} {str(reference)}"
+>>>>>>> f8e2d9b6fa9a6941204cc509892cf783374e284f
     res = subprocess.run(cmd.split(), capture_output=True)
     score = [float(each) for each in pattern.findall(res.stdout.decode("utf-8"))]
     return score
@@ -76,6 +81,7 @@ def all_v_all(all_pdbs, out_path):
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
 
     # tmscore_path = Path("TMscore")
     mdh_pdbs_path = Path(
@@ -83,6 +89,11 @@ if __name__ == "__main__":
     )
     # isoform_1_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/2pwz.pdb")
     # isoform_2_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/1nxu.pdb")
+=======
+    mdh_pdbs_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/mdh_pdbs")
+    isoform_1_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/2pwz.pdb")
+    isoform_2_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/1nxu.pdb")
+>>>>>>> f8e2d9b6fa9a6941204cc509892cf783374e284f
 
     all_pdbs = list(mdh_pdbs_path.glob("*.pdb"))
     all_pdbs.sort()

@@ -49,9 +49,13 @@ def all_v_all(all_pdbs, out_path, num_workers: int = 1):
     total_num = total_num * (total_num - 1) // 2
 
     results = []
+    chunksize = max(1, total_num // num_workers)
     with ProcessPoolExecutor(max_workers=num_workers) as pool:
         for scores in tqdm(
-            pool.map(run_tmalign, itertools.combinations(all_pdbs, 2)), total=total_num
+            pool.map(
+                run_tmalign, itertools.combinations(all_pdbs, 2), chunksize=chunksize
+            ),
+            total=total_num,
         ):
             results.append(scores)
 

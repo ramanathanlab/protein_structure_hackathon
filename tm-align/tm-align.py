@@ -1,3 +1,10 @@
+"""
+This script takes a list of pdbs and compares them to two reference pdbs.
+
+This can be easily adapted to run pairwise tm-scores.
+
+Contact Kyle Hippe khippe@anl.gov with questions
+"""
 import subprocess
 from pathlib import Path
 from tqdm import tqdm
@@ -7,15 +14,7 @@ from functools import partial
 import json
 from itertools import chain
 from operator import itemgetter
-from multiprocessing import Array
 
-"""
-This script takes a list of pdbs and compares them to two reference pdbs.
-
-This can be easily adapted to run pairwise tm-scores.
-
-Contact Kyle Hippe khippe@anl.gov with questions
-"""
 
 pattern = re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")
 
@@ -23,24 +22,10 @@ pattern = re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")
 def run_tmalign(pdb1, pdb2) -> float:
     cmd = f"TMalign {str(pdb2)} {str(pdb1)}"
     res = subprocess.run(cmd.split(), capture_output=True)
+    # TODO: Parse this with an index lookup instead of regex
     score = [float(each) for each in pattern.findall(res.stdout.decode("utf-8"))]
     return score
     # return 1, 1
-
-
-# def process_against_reference(isoform_path, all_pdbs, out_path):
-#     pattern = re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")
-
-#     isoform_tmalign = partial(run_tmalign, isoform_path, pattern=pattern)
-#     isoform_scores = {}
-#     with ProcessPoolExecutor() as pool:
-#         for file, score in tqdm(
-#             pool.map(isoform_tmalign, all_pdbs), total=len(all_pdbs)
-#         ):
-#             isoform_scores[str(file)] = score
-
-#     with open(out_path, "w") as f:
-#         json.dump(isoform_scores, f)
 
 
 def one_v_all(all_pdbs, j):
@@ -58,11 +43,11 @@ def one_v_all(all_pdbs, j):
     return j, ij_sim + ji_sim[:j] + ji_sim[j + 1 :]
 
 
-def all_v_all(all_pdbs, out_path):
+def all_v_all(all_pdbs, out_path, num_workers: int = 1):
     total_num = len(all_pdbs)
     helper_fn = partial(one_v_all, all_pdbs)
     sim_batched = [None] * total_num
-    with ProcessPoolExecutor() as pool:
+    with ProcessPoolExecutor(max_workers=num_workers) as pool:
         for idx, sim_list in tqdm(
             pool.map(helper_fn, range(total_num)), total=total_num
         ):
@@ -84,12 +69,13 @@ if __name__ == "__main__":
     # isoform_1_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/2pwz.pdb")
     # isoform_2_path = Path("/Users/kyle/Desktop/temp/mdh_visualization/1nxu.pdb")
 
+    num_workers = 64
     all_pdbs = list(mdh_pdbs_path.glob("*.pdb"))
     all_pdbs.sort()
 
     # all_pdbs = list(range(4))
 
-    all_v_all(all_pdbs, "test.json")
+    all_v_all(all_pdbs, "test.json", num_workers=num_workers)
 
     # process_against_reference(isoform_1_path, all_pdbs, "2wpz_tmalign_scores.json")
     # process_against_reference(isoform_2_path, all_pdbs, "1nxu_tmalign_scores.json")

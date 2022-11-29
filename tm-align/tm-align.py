@@ -24,7 +24,8 @@ node_rank = int(os.environ.get("NODE_RANK", 0))  # zero indexed
 num_nodes = int(os.environ.get("NRANKS", 1))
 
 
-def run_tmalign(pdb1: Path, pdb2: Path, pattern: re.Pattern) -> float:
+def run_tmalign(pdb_pair: Tuple[Path], pattern: re.Pattern) -> float:
+    pdb1, pdb2 = pdb_pair
     cmd = f"TMalign {str(pdb1)} {str(pdb2)}"
     res = subprocess.run(cmd.split(), capture_output=True)
     # Score 1 is normalized by pdb 2 score 2 is normalized by pdb 1
@@ -37,20 +38,25 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
     pattern = re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")
 
     pairwise_tmalign = partial(run_tmalign, pattern=pattern)
-    futures = []
+    scores = []
     with ProcessPoolExecutor() as pool:
-        for (pdb1, pdb2) in process_pdbs:
-            futures.append(pool.submit(pairwise_tmalign, pdb1=pdb1, pdb2=pdb2))
+        for res in tqdm(pool.map(pairwise_tmalign, process_pdbs)):
+            scores.append(res)
 
-        print(f"Submitted all jobs on node {node_rank}")
-        scores = []
-        print_freq = 1000
-        for i, fut in enumerate(as_completed(futures)):
-            if i % print_freq == 0:
-                print(f"Completed {i} iterations on node {node_rank}")
-            scores.append(fut.result())
+    # futures = []
+    # with ProcessPoolExecutor() as pool:
+    #     for (pdb1, pdb2) in process_pdbs:
+    #         futures.append(pool.submit(pairwise_tmalign, pdb1=pdb1, pdb2=pdb2))
 
-        print(f"Completed {i} iterations on node {node_rank}")
+    #     print(f"Submitted all jobs on node {node_rank}")
+    #     scores = []
+    #     print_freq = 1000
+    #     for i, fut in enumerate(as_completed(futures)):
+    #         if i % print_freq == 0:
+    #             print(f"Completed {i} iterations on node {node_rank}")
+    #         scores.append(fut.result())
+
+    #     print(f"Completed {i} iterations on node {node_rank}")
 
     pickle.dump(scores, out_file.open("wb"))
 

@@ -59,6 +59,8 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
                     print(f"Completed {i+chunk_start} iterations on node {node_rank}")
                 scores.append(res)
 
+    print(f"Completed {i+chunk_start} iterations on node {node_rank}")
+
     pickle.dump(scores, out_file.open("wb"))
 
 

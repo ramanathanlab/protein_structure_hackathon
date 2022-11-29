@@ -44,7 +44,7 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
 
     scores = []
     print_freq = 1000
-    for i, fut in enumerate(as_completed(futures)):
+    for i, fut in tqdm(enumerate(as_completed(futures)), desc="Completion"):
         if i % print_freq == 0:
             print(f"Completed {i} iterations on node {node_rank}")
         scores.append(fut.result())

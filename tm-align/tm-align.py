@@ -44,13 +44,16 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
     scores = []
     print_freq = 1000
 
-    with ProcessPoolExecutor() as pool:
-        for i, res in enumerate(
-            pool.map(pairwise_tmalign, process_pdbs), chunk_size=100
-        ):
-            if i % print_freq == 0:
-                print(f"Completed {i} iterations on node {node_rank}")
-            scores.append(res)
+    chunk_size = 10000
+    for chunk_start in range(0, round(len(process_pdbs), -4) + 1, chunk_size):
+        chunk_end = chunk_start + chunk_size
+        with ProcessPoolExecutor() as pool:
+            for i, res in enumerate(
+                pool.map(pairwise_tmalign, process_pdbs[chunk_start:chunk_end])
+            ):
+                if i % print_freq == 0:
+                    print(f"Completed {i} iterations on node {node_rank}")
+                scores.append(res)
 
     # futures = []
     # with ProcessPoolExecutor() as pool:

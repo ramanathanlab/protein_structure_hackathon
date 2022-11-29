@@ -8,6 +8,8 @@ from functools import partial
 from pathlib import Path
 from typing import List, Tuple, Union
 
+from tqdm import tqdm
+
 """
 This script takes a list of pdbs and compares them to two reference pdbs.
 
@@ -37,7 +39,7 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
     pairwise_tmalign = partial(run_tmalign, pattern=pattern)
     futures = []
     with ProcessPoolExecutor() as pool:
-        for (pdb1, pdb2) in process_pdbs:
+        for (pdb1, pdb2) in tqdm(process_pdbs):
             futures.append(pool.submit(pairwise_tmalign, pdb1=pdb1, pdb2=pdb2))
 
     scores = []

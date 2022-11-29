@@ -42,12 +42,12 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
         for (pdb1, pdb2) in tqdm(process_pdbs):
             futures.append(pool.submit(pairwise_tmalign, pdb1=pdb1, pdb2=pdb2))
 
-    scores = []
-    print_freq = 1000
-    for i, fut in tqdm(enumerate(as_completed(futures)), desc="Completion"):
-        if i % print_freq == 0:
-            print(f"Completed {i} iterations on node {node_rank}")
-        scores.append(fut.result())
+        scores = []
+        print_freq = 1000
+        for i, fut in tqdm(enumerate(as_completed(futures)), desc="Completion"):
+            if i % print_freq == 0:
+                print(f"Completed {i} iterations on node {node_rank}")
+            scores.append(fut.result())
 
     pickle.dump(scores, out_file.open("wb"))
 

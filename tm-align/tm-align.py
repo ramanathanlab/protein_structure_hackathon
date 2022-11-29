@@ -3,12 +3,11 @@ import pickle
 import re
 import subprocess
 from argparse import ArgumentParser
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from pathlib import Path
 from typing import List, Tuple, Union
 
-from tqdm import tqdm
 
 """
 This script takes a list of pdbs and compares them to two reference pdbs.
@@ -55,21 +54,6 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
                     print(f"Completed {i+chunk_start} iterations on node {node_rank}")
                 scores.append(res)
 
-    # futures = []
-    # with ProcessPoolExecutor() as pool:
-    #     for (pdb1, pdb2) in process_pdbs:
-    #         futures.append(pool.submit(pairwise_tmalign, pdb1=pdb1, pdb2=pdb2))
-
-    #     print(f"Submitted all jobs on node {node_rank}")
-    #     scores = []
-    #     print_freq = 1000
-    #     for i, fut in enumerate(as_completed(futures)):
-    #         if i % print_freq == 0:
-    #             print(f"Completed {i} iterations on node {node_rank}")
-    #         scores.append(fut.result())
-
-    #     print(f"Completed {i} iterations on node {node_rank}")
-
     pickle.dump(scores, out_file.open("wb"))
 
 
@@ -101,6 +85,7 @@ if __name__ == "__main__":
 
     # print(len(combinations))
     # exit()
+    combinations = combinations[:20000]
     if num_nodes > 1:
         chunk_size = max(len(combinations) // num_nodes, 1)
         start_idx = node_rank * chunk_size
@@ -120,7 +105,5 @@ if __name__ == "__main__":
 
     args.out_dir.mkdir(exist_ok=True, parents=True)
     out_file = args.out_dir / f"tmscore_combinations{file_idx}.pkl"
-
-    # print(run_tmalign(node_data[0], re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")))
 
     pairwise_processing(node_data, out_file)

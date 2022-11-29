@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-g",
         "--glob_pattern",
-        default="*.pbd",
+        default="*.pdb",
         help="Glob pattern to find input pdbs in folder",
     )
 

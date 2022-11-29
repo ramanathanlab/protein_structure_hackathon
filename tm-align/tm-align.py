@@ -44,7 +44,8 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
     print_freq = 1000
 
     chunk_size = 10000
-    for chunk_start in range(0, round(len(process_pdbs), -4) + 1, chunk_size):
+    end_idx = len(process_pdbs) - (len(process_pdbs) % -chunk_size)
+    for chunk_start in range(0, end_idx, chunk_size):
         chunk_end = chunk_start + chunk_size
         with ProcessPoolExecutor() as pool:
             for i, res in enumerate(

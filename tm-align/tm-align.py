@@ -39,15 +39,18 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
     pairwise_tmalign = partial(run_tmalign, pattern=pattern)
     futures = []
     with ProcessPoolExecutor() as pool:
-        for (pdb1, pdb2) in tqdm(process_pdbs):
+        for (pdb1, pdb2) in process_pdbs:
             futures.append(pool.submit(pairwise_tmalign, pdb1=pdb1, pdb2=pdb2))
 
+        print(f"Submitted all jobs on node {node_rank}")
         scores = []
         print_freq = 1000
-        for i, fut in tqdm(enumerate(as_completed(futures)), desc="Completion"):
+        for i, fut in enumerate(as_completed(futures)):
             if i % print_freq == 0:
                 print(f"Completed {i} iterations on node {node_rank}")
             scores.append(fut.result())
+
+        print(f"Completed {i} iterations on node {node_rank}")
 
     pickle.dump(scores, out_file.open("wb"))
 

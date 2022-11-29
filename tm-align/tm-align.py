@@ -42,8 +42,12 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
 
     pairwise_tmalign = partial(run_tmalign, pattern=pattern)
     scores = []
+    print_freq = 1000
+
     with ProcessPoolExecutor() as pool:
-        for res in tqdm(pool.map(pairwise_tmalign, process_pdbs)):
+        for i, res in enumerate(pool.map(pairwise_tmalign, process_pdbs)):
+            if i % print_freq == 0:
+                print(f"Completed {i} iterations on node {node_rank}")
             scores.append(res)
 
     # futures = []

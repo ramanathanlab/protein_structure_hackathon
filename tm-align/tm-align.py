@@ -52,7 +52,7 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
                 pool.map(pairwise_tmalign, process_pdbs[chunk_start:chunk_end])
             ):
                 if i % print_freq == 0:
-                    print(f"Completed {i} iterations on node {node_rank}")
+                    print(f"Completed {i+chunk_start} iterations on node {node_rank}")
                 scores.append(res)
 
     # futures = []

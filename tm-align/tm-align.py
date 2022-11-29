@@ -41,8 +41,8 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
 
     pairwise_tmalign = partial(run_tmalign, pattern=pattern)
     scores = []
-    print_freq = 1000
 
+    print_freq = 1000
     chunk_size = 10000
     end_idx = len(process_pdbs) - (len(process_pdbs) % -chunk_size)
     for chunk_start in range(0, end_idx, chunk_size):

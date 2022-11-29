@@ -25,7 +25,7 @@ num_nodes = int(os.environ.get("NRANKS", 1))
 
 
 def run_tmalign(pdb1: Path, pdb2: Path, pattern: re.Pattern) -> float:
-    cmd = f"tmalign {str(pdb1)} {str(pdb2)}"
+    cmd = f"TMalign {str(pdb1)} {str(pdb2)}"
     res = subprocess.run(cmd.split(), capture_output=True)
     # Score 1 is normalized by pdb 2 score 2 is normalized by pdb 1
     scores = pattern.findall(res.stdout.decode("utf-8"))

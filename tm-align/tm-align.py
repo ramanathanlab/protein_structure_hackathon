@@ -91,6 +91,7 @@ if __name__ == "__main__":
         node_data = combinations[start_idx:end_idx]
         file_idx = f"_{start_idx}-{end_idx}"
     else:
+        print(f"Node {node_rank} processing all {len(combinations)} combinations")
         node_data = combinations[:]
         file_idx = ""
 

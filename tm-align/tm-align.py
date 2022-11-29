@@ -10,9 +10,9 @@ from typing import List, Tuple, Union
 
 
 """
-This script takes a list of pdbs and compares them to two reference pdbs.
+This script takes a directory of PDBS and performs pairwise comparisons of TM-scores with them. 
 
-This can be easily adapted to run pairwise tm-scores.
+TODO: add all gather for individual tm_score files
 
 Contact Kyle Hippe khippe@anl.gov with questions
 """
@@ -90,9 +90,6 @@ if __name__ == "__main__":
         for j in range(i, len(pdbs)):
             combinations.append((pdbs[i], pdbs[j]))
 
-    # print(len(combinations))
-    # exit()
-    combinations = combinations[:20000]
     if num_nodes > 1:
         chunk_size = max(len(combinations) // num_nodes, 1)
         start_idx = node_rank * chunk_size

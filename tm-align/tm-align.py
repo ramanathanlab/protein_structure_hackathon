@@ -31,7 +31,10 @@ def run_tmalign(pdb_pair: Tuple[Path], pattern: re.Pattern) -> float:
     # Score 1 is normalized by pdb 2 score 2 is normalized by pdb 1
     scores = pattern.findall(res.stdout.decode("utf-8"))
 
-    return {(pdb1, pdb2): float(scores[0]), (pdb2, pdb1): float(scores[-1])}
+    return {
+        (str(pdb1), str(pdb2)): float(scores[0]),
+        (str(pdb2), str(pdb1)): float(scores[-1]),
+    }
 
 
 def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
@@ -103,12 +106,12 @@ if __name__ == "__main__":
         file_idx = f"_{start_idx}-{end_idx}"
     else:
         print(f"Node {node_rank} processing all {len(combinations)} combinations")
-        node_data = combinations[:20000]
+        node_data = combinations[:10000]
         file_idx = ""
 
     args.out_dir.mkdir(exist_ok=True, parents=True)
     out_file = args.out_dir / f"tmscore_combinations{file_idx}.pkl"
 
-    print(run_tmalign(node_data[0], re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")))
+    # print(run_tmalign(node_data[0], re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")))
 
-    # pairwise_processing(node_data, out_file)
+    pairwise_processing(node_data, out_file)

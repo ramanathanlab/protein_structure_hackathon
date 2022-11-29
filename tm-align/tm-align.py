@@ -109,4 +109,6 @@ if __name__ == "__main__":
     args.out_dir.mkdir(exist_ok=True, parents=True)
     out_file = args.out_dir / f"tmscore_combinations{file_idx}.pkl"
 
-    pairwise_processing(node_data, out_file)
+    print(run_tmalign(node_data[0], re.compile("TM-score= ([+-]?[0-9]*[.]?[0-9]+)")))
+
+    # pairwise_processing(node_data, out_file)

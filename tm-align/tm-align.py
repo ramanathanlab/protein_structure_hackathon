@@ -37,8 +37,8 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
     pairwise_tmalign = partial(run_tmalign, pattern=pattern)
     futures = []
     with ProcessPoolExecutor() as pool:
-        for pair in process_pdbs:
-            futures.append(pool.submit(pairwise_tmalign, *pair))
+        for (pdb1, pdb2) in process_pdbs:
+            futures.append(pool.submit(pairwise_tmalign, pdb1=pdb1, pdb2=pdb2))
 
     scores = []
     print_freq = 1000

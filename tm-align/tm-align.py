@@ -92,7 +92,7 @@ if __name__ == "__main__":
         file_idx = f"_{start_idx}-{end_idx}"
     else:
         print(f"Node {node_rank} processing all {len(combinations)} combinations")
-        node_data = combinations[:]
+        node_data = combinations[:20000]
         file_idx = ""
 
     args.out_dir.mkdir(exist_ok=True, parents=True)

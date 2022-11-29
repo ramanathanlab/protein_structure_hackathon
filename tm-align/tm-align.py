@@ -41,7 +41,10 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
             futures.append(pool.submit(pairwise_tmalign, *pair))
 
     scores = []
-    for fut in as_completed(futures):
+    print_freq = 1000
+    for i, fut in enumerate(as_completed(futures)):
+        if i % print_freq == 0:
+            print(f"Completed {i} iterations on node {node_rank}")
         scores.append(fut.result())
 
     pickle.dump(scores, out_file.open("wb"))
@@ -73,8 +76,8 @@ if __name__ == "__main__":
         for j in range(i, len(pdbs)):
             combinations.append((pdbs[i], pdbs[j]))
 
-    print(len(combinations))
-    exit()
+    # print(len(combinations))
+    # exit()
     if num_nodes > 1:
         chunk_size = max(len(combinations) // num_nodes, 1)
         start_idx = node_rank * chunk_size

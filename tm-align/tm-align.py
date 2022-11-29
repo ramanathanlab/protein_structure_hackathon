@@ -45,6 +45,10 @@ def pairwise_processing(process_pdbs: List[Tuple[PathLike]], out_file: Path):
     print_freq = 1000
     chunk_size = 10000
     end_idx = len(process_pdbs) - (len(process_pdbs) % -chunk_size)
+    assert end_idx > len(
+        process_pdbs
+    ), f"End idx not set properly {end_idx=}, {len(process_pdbs)=}"
+
     for chunk_start in range(0, end_idx, chunk_size):
         chunk_end = chunk_start + chunk_size
         with ProcessPoolExecutor() as pool:

@@ -66,29 +66,29 @@ else:
     reaction_embeddings_file = open(f'embeddings/{embedding_model_name}_rxn_embeddings.pk', 'wb')
     pickle.dump(reaction_embeddings, reaction_embeddings_file)
 
+if __name__ == "__main__":
+    # For pairs of reactions calculate distances
+    random_keys = random.sample(reaction_embeddings.keys(), 100)
+    random_keys = [rk for rk in random_keys if isinstance(modelseed.reactions[rk]['ec_numbers'], str)][:min(len(random_keys), 50)]
 
-# For pairs of reactions calculate distances
-random_keys = random.sample(reaction_embeddings.keys(), 100)
-random_keys = [rk for rk in random_keys if isinstance(modelseed.reactions[rk]['ec_numbers'], str)][:min(len(random_keys), 50)]
+    substrate_embeddings_sample = np.vstack([reaction_embeddings[k][0] for k in random_keys])
+    transformation_embeddings_sample = np.vstack([reaction_embeddings[k][1] for k in random_keys])
 
-substrate_embeddings_sample = np.vstack([reaction_embeddings[k][0] for k in random_keys])
-transformation_embeddings_sample = np.vstack([reaction_embeddings[k][1] for k in random_keys])
+    w = 0.75
+    embedded_reactions = w * substrate_embeddings_sample + (1-w) * transformation_embeddings_sample
+    embedded_reactions_df = pd.DataFrame(embedded_reactions, index=[modelseed.reactions[k]['ec_numbers'] for k in random_keys])
 
-w = 0.75
-embedded_reactions = w * substrate_embeddings_sample + (1-w) * transformation_embeddings_sample
-embedded_reactions_df = pd.DataFrame(embedded_reactions, index=[modelseed.reactions[k]['ec_numbers'] for k in random_keys])
+    # Do distances match EC numbers?
+    from scipy.cluster.hierarchy import dendrogram, linkage
+    from matplotlib import pyplot as plt
 
-# Do distances match EC numbers?
-from scipy.cluster.hierarchy import dendrogram, linkage
-from matplotlib import pyplot as plt
+    Z = linkage(embedded_reactions_df, 'single')
 
-Z = linkage(embedded_reactions_df, 'single')
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+    ax.set_title(f'Hierarchical Clustering Dendrogram \n {w} substrate and {1-w} tranformation weights')
+    ax.set_xlabel('')
+    ax.set_ylabel('distance (Euclidean)')
 
-fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
-ax.set_title(f'Hierarchical Clustering Dendrogram \n {w} substrate and {1-w} tranformation weights')
-ax.set_xlabel('')
-ax.set_ylabel('distance (Euclidean)')
-
-# Make the dendrogram
-dendrogram(Z, labels=embedded_reactions_df.index, leaf_rotation=0, orientation='left')
-plt.show()
+    # Make the dendrogram
+    dendrogram(Z, labels=embedded_reactions_df.index, leaf_rotation=0, orientation='left')
+    plt.show()

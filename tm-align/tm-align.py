@@ -81,6 +81,12 @@ if __name__ == "__main__":
         help="Glob pattern to find input pdbs in folder",
     )
 
+    parser.add_argument(
+        "--nogather",
+        action="store_false",
+        help="If set, will NOT gather all files into a json file",
+    )
+
     args = parser.parse_args()
 
     pdbs = list(args.input_dir.glob(args.glob_pattern))
@@ -111,3 +117,26 @@ if __name__ == "__main__":
     out_file = args.out_dir / f"tmscore_combinations{file_idx}.pkl"
 
     pairwise_processing(node_data, out_file)
+
+    if node_rank == 0 and not args.nogather:
+        import json
+        from collections import defaultdict
+
+        scores = []
+
+        for score_file in args.out_dir.glob("*.pkl"):
+            scores.extend(pickle.load(score_file.open("rb")))
+
+        scores_mapping = defaultdict(dict)
+
+        for score_dict in scores:
+            for pair, score in score_dict.items():
+                pdb1, pdb2 = pair
+
+                pdb1_name = Path(pdb1).stem
+                pdb2_name = Path(pdb2).stem
+
+                scores_mapping[pdb1_name][pdb2_name] = score
+
+        gather_file = args.out_dir / f"{args.out_dir.stem}.json"
+        json.dump(scores_mapping, gather_file.open("w"))

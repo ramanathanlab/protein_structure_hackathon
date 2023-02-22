@@ -1,0 +1,66 @@
+#!/bin/sh
+#PBS -l select=64:system=polaris
+#PBS -l place=scatter
+#PBS -l filesystems=
+#PBS -l walltime=6:00:00
+#PBS -q prod
+#PBS -A CompBioAffin
+
+# Controlling the output of your application
+# UG Sec 3.3 page UG-40 Managing Output and Error Files
+# By default, PBS spools your output on the compute node and then uses scp to move it the
+# destination directory after the job finishes.  Since we have globally mounted file systems
+# it is highly recommended that you use the -k option to write directly to the destination
+# the doe stands for direct, output, error
+#PBS -k doe
+#PBS -o /lus/eagle/projects/candle_aesp/khippe/github/protein_structure_hackathon/tm-align/tmalign_64nodes.out
+#PBS -e /lus/eagle/projects/candle_aesp/khippe/github/protein_structure_hackathon/tm-align/tmalign_64nodes.err
+
+# Internet access on nodes
+export HTTP_PROXY=http://proxy.alcf.anl.gov:3128
+export HTTPS_PROXY=http://proxy.alcf.anl.gov:3130
+export http_proxy=http://proxy.alcf.anl.gov:3128
+export https_proxy=http://proxy.alcf.anl.gov:3128
+git config --global http.proxy http://proxy.alcf.anl.gov:3128
+echo "Set HTTP_PROXY and to $HTTP_PROXY"
+
+# Set ADDR and PORT for communication
+master_node=$(cat $PBS_NODEFILE| head -1)
+export MASTER_ADDR=$(host $master_node | head -1 | awk '{print $4}')
+export MASTER_PORT=2345
+
+# Enable GPU-MPI (if supported by application)
+export MPICH_GPU_SUPPORT_ENABLED=1
+
+# MPI and OpenMP settings
+NNODES=`wc -l < $PBS_NODEFILE`
+NRANKS_PER_NODE=1
+NDEPTH=64
+
+NTOTRANKS=$(( NNODES * NRANKS_PER_NODE ))
+echo "NUM_OF_NODES= ${NNODES} TOTAL_NUM_RANKS= ${NTOTRANKS} RANKS_PER_NODE= ${NRANKS_PER_NODE}"
+echo < $PBS_NODEFILE
+
+# Change to workdir
+cd /lus/eagle/projects/candle_aesp/khippe/github/protein_structure_hackathon/tm-align
+
+# Extras (initialize conda env etc...)
+module load conda/2022-09-08 && conda activate tm-align
+
+# Logging
+echo "$(df -h /local/scratch)"
+
+# NCCL settings
+export NCCL_DEBUG=info
+export NCCL_NET_GDR_LEVEL=PHB
+
+# For applications that internally handle binding MPI/OpenMP processes to GPUs
+mpiexec \
+  -n ${NTOTRANKS} \
+  --ppn ${NRANKS_PER_NODE} \
+  --depth=${NDEPTH} \
+  --cpu-bind none \
+  --mem-bind none \
+  --hostfile $PBS_NODEFILE  \
+  /lus/eagle/projects/CVD-Mol-AI/hippekp/conda/envs/tm-align/lib/python3.9/site-packages/polaris_utils/templates/run-polaris-node-level.sh \
+  python tm-align.py --input_dir /lus/eagle/projects/candle_aesp/khippe/structure_hackathon/EcoliMG1655/alphafold/ --out_dir /lus/eagle/projects/candle_aesp/khippe/structure_hackathon/EcoliMG1655_tmscores
